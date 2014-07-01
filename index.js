@@ -115,7 +115,8 @@ module.exports = {
             method: 'GET',
             path: '/static/primus.js',
             handler: function(req, reply) {
-                reply(config.primus.library());
+                reply(config.primus.library())
+                    .type('application/javascript');
             }
         });
 
