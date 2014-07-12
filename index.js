@@ -29,6 +29,7 @@ var config = {
     controllerPath: './Controllers',
     staticPath: './Static',
     indexController: 'index',
+    customSparkParams: {},
     //Enable/disable logging
     debug: false,
     //Something with a log method
@@ -220,6 +221,7 @@ module.exports = {
                     plugin.route({
                         method: 'GET',
                         path: '/' + controller + '/' + subController + Controller.prototype.routing,
+                        config: {auth: Controller.prototype.security },
                         config: {
                             handler: function(req, reply) {
                                 var Controller = controllers[controller][subController];
