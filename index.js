@@ -221,24 +221,23 @@ module.exports = {
                     plugin.route({
                         method: 'GET',
                         path: '/' + controller + '/' + subController + Controller.prototype.routing,
-                        config: {auth: Controller.prototype.security },
                         config: {
+                            auth: Controller.prototype.security,
                             handler: function(req, reply) {
                                 var Controller = controllers[controller][subController];
 
                                 new Controller(req, function() {
-                                        var user = {};
+                                    var user = {};
 
-                                        // Render the view with the custom greeting
-                                        reply.view(controller + '/' + this.view, _.merge({
-                                            APP_NAME: config.appName,
-                                            SCRIPTS: scriptInjection.replace('{{CONTROLLER}}', controller + subController),
-                                            PRIMUS_JS: '/static/primus.js',
-                                            user: {
-                                                isAuthenticated: true
-                                            }
-                                        }, this.viewProps, user));
-                                    }
+                                    // Render the view with the custom greeting
+                                    reply.view(controller + '/' + this.view, _.merge({
+                                        APP_NAME: config.appName,
+                                        SCRIPTS: scriptInjection.replace('{{CONTROLLER}}', controller + subController),
+                                        PRIMUS_JS: '/static/primus.js',
+                                        user: {
+                                            isAuthenticated: true
+                                        }
+                                    }, this.viewProps, user));
                                 });
 
                             }
