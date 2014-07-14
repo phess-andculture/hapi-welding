@@ -226,9 +226,7 @@ module.exports = {
                             handler: function(req, reply) {
                                 var Controller = controllers[controller][subController];
 
-                                new Controller({
-                                    params: [req],
-                                    callback: function() {
+                                new Controller(req, function() {
                                         var user = {};
 
                                         // Render the view with the custom greeting
