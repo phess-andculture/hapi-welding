@@ -226,18 +226,18 @@ module.exports = {
                             handler: function(req, reply) {
                                 var Controller = controllers[controller][subController];
 
-                                new Controller(req, function() {
+                                new Controller(req, function(instance) {
                                     var user = {};
 
                                     // Render the view with the custom greeting
-                                    reply.view(controller + '/' + this.view, _.merge({
+                                    reply.view(controller + '/' + instance.view, _.merge({
                                         APP_NAME: config.appName,
                                         SCRIPTS: scriptInjection.replace('{{CONTROLLER}}', controller + subController),
                                         PRIMUS_JS: '/static/primus.js',
                                         user: {
                                             isAuthenticated: true
                                         }
-                                    }, this.viewProps, user));
+                                    }, instance.viewProps, user));
                                 });
 
                             }
