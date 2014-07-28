@@ -227,7 +227,7 @@ module.exports = {
                                 var Controller = controllers[controller][subController];
 
                                 new Controller(req, function(instance) {
-                                    var user = {};
+                                    var user = req.session.user ? req.session.user : {};
 
                                     // Render the view with the custom greeting
                                     reply.view(controller + '/' + instance.view, _.merge({
@@ -235,7 +235,7 @@ module.exports = {
                                         SCRIPTS: scriptInjection.replace('{{CONTROLLER}}', controller + subController),
                                         PRIMUS_JS: '/static/primus.js',
                                         user: {
-                                            isAuthenticated: true
+                                            isAuthenticated: req.session._isAuthenticated()
                                         }
                                     }, instance.viewProps, user));
                                 });
