@@ -15,7 +15,7 @@ var http = require('http'),
         '<script src="/static/primus.js" type="text/javascript"></script>',
         '<script type="text/javascript">',
         '(function (root) {',
-        '   var primus = Primus.connect("ws://{{HOST}}:{{PORT}}/?token=" + jwtToken");',
+        '   var primus = Primus.connect("ws://{{HOST}}:{{PORT}}/?token=" + jwtToken);',
         '   root.Controller = primus.resource("{{CONTROLLER}}");',
         '})(this);',
         '</script>'
