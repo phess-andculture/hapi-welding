@@ -15,7 +15,7 @@ var http = require('http'),
         '<script src="/static/primus.js" type="text/javascript"></script>',
         '<script type="text/javascript">',
         '(function (root) {',
-        '   var primus = Primus.connect("ws://{{HOST}}:{{PORT}}");',
+        '   var primus = Primus.connect("ws://{{HOST}}:{{PORT}}/?token=" + jwtToken);',
         '   root.Controller = primus.resource("{{CONTROLLER}}");',
         '})(this);',
         '</script>'
@@ -227,7 +227,13 @@ module.exports = {
                                 var Controller = controllers[controller][subController];
 
                                 new Controller(req, function(instance) {
-                                    var user = {};
+                                    var user = req.session.user ? req.session.user : {},
+                                        viewOptions = null;
+                                    if (instance.layout) {
+                                        viewOptions = {
+                                            layout: instance.layout
+                                        };
+                                    }
 
                                     // Render the view with the custom greeting
                                     reply.view(controller + '/' + instance.view, _.merge({
@@ -235,9 +241,9 @@ module.exports = {
                                         SCRIPTS: scriptInjection.replace('{{CONTROLLER}}', controller + subController),
                                         PRIMUS_JS: '/static/primus.js',
                                         user: {
-                                            isAuthenticated: true
+                                            isAuthenticated: req.session._isAuthenticated()
                                         }
-                                    }, instance.viewProps, user));
+                                    }, instance.viewProps, user), viewOptions);
                                 });
 
                             }
