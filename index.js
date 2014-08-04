@@ -227,7 +227,13 @@ module.exports = {
                                 var Controller = controllers[controller][subController];
 
                                 new Controller(req, function(instance) {
-                                    var user = req.session.user ? req.session.user : {};
+                                    var user = req.session.user ? req.session.user : {},
+                                        viewOptions = null;
+                                    if (instance.layout) {
+                                        viewOptions = {
+                                            layout: instance.layout
+                                        };
+                                    }
 
                                     // Render the view with the custom greeting
                                     reply.view(controller + '/' + instance.view, _.merge({
@@ -237,7 +243,7 @@ module.exports = {
                                         user: {
                                             isAuthenticated: req.session._isAuthenticated()
                                         }
-                                    }, instance.viewProps, user));
+                                    }, instance.viewProps, user), viewOptions);
                                 });
 
                             }
