@@ -168,13 +168,13 @@ module.exports = {
             }
 
             // Root controllers
-            if (file.indexOf('/') === -1) {
+            if (file.indexOf(path.sep) === -1) {
 
                 controllers[file] = {};
 
                 // Sub-controllers
             } else {
-                var cp = file.split('/');
+                var cp = file.split(path.sep);
 
                 // allow for private files
                 if (cp[1].substring(0, 1) !== '_') {
