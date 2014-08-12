@@ -206,7 +206,8 @@ module.exports = {
                 }
 
                 (function(controller, subController) {
-                    var Controller = controllers[controller][subController];
+                    var Controller = controllers[controller][subController],
+                        subControllerRoute = subController;
                     //tempCont = new Controller();
 
                     config.primus.resource(controller + subController, Controller.prototype);
@@ -217,10 +218,15 @@ module.exports = {
                         console.log('Invalid view "%s" requested for the %s controller, defaulting to "index"', Controller.prototype.view, controller + '/' + subController);
                     }
 
+                    //If controller overrides its name for routing
+                    if(Controller.prototype.controllerRouting) {
+                        subControllerRoute = Controller.prototype.controllerRouting;
+                    }
+
                     // Add the route
                     plugin.route({
                         method: 'GET',
-                        path: '/' + controller + '/' + subController + Controller.prototype.routing,
+                        path: '/' + controller + '/' + subControllerRoute + Controller.prototype.routing,
                         config: {
                             auth: Controller.prototype.security,
                             handler: function(req, reply) {
