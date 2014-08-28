@@ -246,8 +246,9 @@ exports.register = function(plugin, options, next) {
                             ];
 
                             new Controller(req, function(instance) {
-                                var user = req.session && req.session.user ? req.session
-                                    .user : {},
+                                var user = req.auth && req.auth.credentials
+                                    ? req.auth.credentials
+                                    : {},
                                     viewOptions = null;
                                 if (instance.layout) {
                                     viewOptions = {
@@ -266,8 +267,7 @@ exports.register = function(plugin, options, next) {
                                                 subController),
                                         PRIMUS_JS: '/static/primus.js',
                                         user: {
-                                            isAuthenticated: req
-                                                .session._isAuthenticated()
+                                            isAuthenticated: req.auth.isAuthenticated
                                         }
                                     }, instance.viewProps, user),
                                     viewOptions);
