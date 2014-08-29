@@ -249,7 +249,7 @@ exports.register = function(plugin, options, next) {
                                 var user = req.auth && req.auth.credentials
                                     ? req.auth.credentials
                                     : {},
-                                    viewOptions = null;
+                                    viewOptions = {};
                                 if (instance.layout) {
                                     viewOptions = {
                                         layout: instance.layout
