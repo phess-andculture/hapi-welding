@@ -83,194 +83,218 @@ var primusPlugin = function(hapiServer) {
     };
 };
 
-module.exports = {
-    name: 'hapi_welding',
-    version: pkg.version,
-    register: function(plugin, options, next) {
-        Object.keys(options).forEach(function(k) {
-            if (config[k] !== undefined) {
-                config[k] = options[k];
-            } else {
-                console.log('The option passed to hapi-welding of %s is invalid and thus ignored', k);
+exports.register = function(plugin, options, next) {
+    Object.keys(options).forEach(function(k) {
+        if (config[k] !== undefined) {
+            config[k] = options[k];
+        } else {
+            console.log(
+                'The option passed to hapi-welding of %s is invalid and thus ignored',
+                k);
+        }
+    });
+
+    config.primus.resources = {};
+
+    if (!config.primus.channel) {
+        // add multiplex to Primus
+        config.primus.use('multiplex', multiplex);
+        config.primus.use('emitter', emitter);
+        config.primus.use('resource', primusMapping);
+
+        controllerFiles = wrench.readdirSyncRecursive(path.resolve(appDir,
+            config.controllerPath));
+
+        //set primus linkage for the client
+        scriptInjection = scriptInjection.replace('{{HOST}}', config.server.info
+            .host);
+        scriptInjection = scriptInjection.replace('{{PORT}}', config.server.info
+            .port);
+
+    }
+
+    // Route to the primus lib
+    plugin.route({
+        method: 'GET',
+        path: '/static/primus.js',
+        handler: function(req, reply) {
+            reply(config.primus.library())
+                .type('application/javascript');
+        }
+    });
+
+    // Route to the static files
+    plugin.route({
+        method: 'GET',
+        path: '/static/{path*}',
+        handler: {
+            directory: {
+                path: path.resolve(appDir, config.staticPath),
+                listing: false,
+                index: true
             }
-        });
+        }
+    });
 
-        config.primus.resources = {};
+    // Add the index route
+    plugin.route({
+        method: 'GET',
+        path: '/',
+        config: {
+            handler: function(req, reply) {
+                reply().redirect(config.indexController);
+            }
+        }
+    });
 
-        if (!config.primus.channel) {
-            // add multiplex to Primus
-            config.primus.use('multiplex', multiplex);
-            config.primus.use('emitter', emitter);
-            config.primus.use('resource', primusMapping);
+    plugin.route({
+        method: 'GET',
+        path: config.routePath,
+        config: {},
+        handler: function(request) {
+            log('[primus] Got request for session');
+            log('[primus] Responding with', JSON.stringify(request.session)
+                .substr(0, 100) + ' ... }');
+            request.raw.res._writeSession(request.session);
+        }
+    });
 
-            controllerFiles = wrench.readdirSyncRecursive(path.resolve(appDir, config.controllerPath));
+    options.primus.use('hapi_welding', primusPlugin(options.server));
 
-            //set primus linkage for the client
-            scriptInjection = scriptInjection.replace('{{HOST}}', config.server.info.host);
-            scriptInjection = scriptInjection.replace('{{PORT}}', config.server.info.port);
+    // init all the controllers into a map so that its in-memory
+    for (var i = 0; i < controllerFiles.length; i++) {
+        var file = controllerFiles[i].replace('.js', '');
 
+        // because sometimes OS X sucks
+        if (file.indexOf('DS_Store') !== -1) {
+            continue;
         }
 
-        // Route to the primus lib
-        plugin.route({
-            method: 'GET',
-            path: '/static/primus.js',
-            handler: function(req, reply) {
-                reply(config.primus.library())
-                    .type('application/javascript');
-            }
-        });
+        // Root controllers
+        if (file.indexOf(path.sep) === -1) {
 
-        // Route to the static files
-        plugin.route({
-            method: 'GET',
-            path: '/static/{path*}',
-            handler: {
-                directory: {
-                    path: path.resolve(appDir, config.staticPath),
-                    listing: false,
-                    index: true
+            controllers[file] = {};
+
+            // Sub-controllers
+        } else {
+            var cp = file.split(path.sep);
+
+            // allow for private files
+            if (cp[1].substring(0, 1) !== '_') {
+                controllers[cp[0]][cp[1]] = require(path.resolve(appDir, config
+                    .controllerPath, file));
+            }
+        }
+    }
+
+    for (var controller in controllers) {
+
+        (function(controller) {
+            // redirect to the index subroute
+            plugin.route({
+                method: 'GET',
+                path: '/' + controller,
+                config: {
+                    handler: function(req, reply) {
+                        reply().redirect('/' + controller + '/index');
+                    }
                 }
-            }
-        });
+            });
+        })(controller);
 
-        // Add the index route
-        plugin.route({
-            method: 'GET',
-            path: '/',
-            config: {
-                handler: function(req, reply) {
-                    reply().redirect(config.indexController);
-                }
-            }
-        });
+        for (var subController in controllers[controller]) {
 
-        plugin.route({
-            method: 'GET',
-            path: config.routePath,
-            config: {},
-            handler: function(request) {
-                log('[primus] Got request for session');
-                log('[primus] Responding with', JSON.stringify(request.session).substr(0, 100) + ' ... }');
-                request.raw.res._writeSession(request.session);
-            }
-        });
-
-        options.primus.use('hapi_welding', primusPlugin(options.server));
-
-        // init all the controllers into a map so that its in-memory
-        for (var i = 0; i < controllerFiles.length; i++) {
-            var file = controllerFiles[i].replace('.js', '');
-
-            // because sometimes OS X sucks
-            if (file.indexOf('DS_Store') !== -1) {
+            // ignore private files
+            if (subController.substring(0, 1) === '_') {
                 continue;
             }
 
-            // Root controllers
-            if (file.indexOf(path.sep) === -1) {
+            (function(controller, subController) {
+                var Controller = controllers[controller][subController],
+                    subControllerRoute = subController;
+                //tempCont = new Controller();
 
-                controllers[file] = {};
+                config.primus.resource(controller + subController,
+                    Controller.prototype);
 
-                // Sub-controllers
-            } else {
-                var cp = file.split(path.sep);
-
-                // allow for private files
-                if (cp[1].substring(0, 1) !== '_') {
-                    controllers[cp[0]][cp[1]] = require(path.resolve(appDir, config.controllerPath, file));
+                //If the requested view was not avaliable...
+                if (!fs.existsSync(path.resolve(options.server.settings.views
+                    .path, controller, Controller.prototype.view.trim() +
+                    '.html'))) {
+                    Controller.prototype.view = 'index';
+                    console.log(
+                        'Invalid view "%s" requested for the %s controller, defaulting to "index"',
+                        Controller.prototype.view, controller + '/' +
+                        subController);
                 }
-            }
-        }
 
-        for (var controller in controllers) {
+                //If controller overrides its name for routing
+                if (Controller.prototype.controllerRouting) {
+                    subControllerRoute = Controller.prototype.controllerRouting;
+                }
 
-            (function(controller) {
-                // redirect to the index subroute
+                // Add the route
                 plugin.route({
                     method: 'GET',
-                    path: '/' + controller,
+                    path: '/' + controller + '/' + subControllerRoute +
+                        Controller.prototype.routing,
                     config: {
+                        auth: Controller.prototype.security,
                         handler: function(req, reply) {
-                            reply().redirect('/' + controller + '/index');
+                            var Controller = controllers[controller][
+                                subController
+                            ];
+
+                            new Controller(req, function(instance) {
+                                var user = req.auth && req.auth.credentials
+                                    ? req.auth.credentials
+                                    : {},
+                                    viewOptions = {};
+                                if (instance.layout) {
+                                    viewOptions = {
+                                        layout: instance.layout
+                                    };
+                                }
+
+                                // Render the view with the custom greeting
+                                reply.view(controller + '/' +
+                                    instance.view, _.merge({
+                                        APP_NAME: config.appName,
+                                        SCRIPTS: scriptInjection
+                                            .replace(
+                                                '{{CONTROLLER}}',
+                                                controller +
+                                                subController),
+                                        PRIMUS_JS: '/static/primus.js',
+                                        user: {
+                                            isAuthenticated: req.auth.isAuthenticated
+                                        }
+                                    }, instance.viewProps, user),
+                                    viewOptions);
+                            });
+
                         }
                     }
                 });
-            })(controller);
-
-            for (var subController in controllers[controller]) {
-
-                // ignore private files
-                if (subController.substring(0, 1) === '_') {
-                    continue;
-                }
-
-                (function(controller, subController) {
-                    var Controller = controllers[controller][subController],
-                        subControllerRoute = subController;
-                    //tempCont = new Controller();
-
-                    config.primus.resource(controller + subController, Controller.prototype);
-
-                    //If the requested view was not avaliable...
-                    if(!fs.existsSync(path.resolve(options.server.settings.views.path, controller, Controller.prototype.view.trim() + '.html'))) {
-                        Controller.prototype.view = 'index';
-                        console.log('Invalid view "%s" requested for the %s controller, defaulting to "index"', Controller.prototype.view, controller + '/' + subController);
-                    }
-
-                    //If controller overrides its name for routing
-                    if(Controller.prototype.controllerRouting) {
-                        subControllerRoute = Controller.prototype.controllerRouting;
-                    }
-
-                    // Add the route
-                    plugin.route({
-                        method: 'GET',
-                        path: '/' + controller + '/' + subControllerRoute + Controller.prototype.routing,
-                        config: {
-                            auth: Controller.prototype.security,
-                            handler: function(req, reply) {
-                                var Controller = controllers[controller][subController];
-
-                                new Controller(req, function(instance) {
-                                    var user = req.session.user ? req.session.user : {},
-                                        viewOptions = null;
-                                    if (instance.layout) {
-                                        viewOptions = {
-                                            layout: instance.layout
-                                        };
-                                    }
-
-                                    // Render the view with the custom greeting
-                                    reply.view(controller + '/' + instance.view, _.merge({
-                                        APP_NAME: config.appName,
-                                        SCRIPTS: scriptInjection.replace('{{CONTROLLER}}', controller + subController),
-                                        PRIMUS_JS: '/static/primus.js',
-                                        user: {
-                                            isAuthenticated: req.session._isAuthenticated()
-                                        }
-                                    }, instance.viewProps, user), viewOptions);
-                                });
-
-                            }
-                        }
-                    });
-                })(controller, subController);
-            }
+            })(controller, subController);
         }
-
-        // 404 routes? yea we got that!
-        plugin.route({
-            method: '*',
-            path: '/{p*}',
-            handler: function(request, reply) {
-                reply.view('404', {
-                    APP_NAME: config.appName,
-                    pageTitle: 'Unknown',
-                }).code(404);
-            }
-        });
-
-        next();
     }
+
+    // 404 routes? yea we got that!
+    plugin.route({
+        method: '*',
+        path: '/{p*}',
+        handler: function(request, reply) {
+            reply.view('404', {
+                APP_NAME: config.appName,
+                pageTitle: 'Unknown',
+            }).code(404);
+        }
+    });
+
+    next();
+};
+
+exports.register.attributes = {
+  pkg: require('./package.json')
 };
