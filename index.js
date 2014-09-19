@@ -28,7 +28,7 @@ var config = {
     appName: null,
     cacheSettings: {
             privacy: 'public',
-            expiresIn: 3.154e10
+            expiresIn: 3.6e6
         },
     controllerPath: './Controllers',
     staticPath: './Static',
