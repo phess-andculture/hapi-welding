@@ -117,9 +117,15 @@ exports.register = function(plugin, options, next) {
     plugin.route({
         method: 'GET',
         path: '/static/primus.js',
-        handler: function(req, reply) {
-            reply(config.primus.library())
-                .type('application/javascript');
+        config: {
+            handler: function(req, reply) {
+                reply(config.primus.library())
+                    .type('application/javascript');
+            },
+            cache: {
+                privacy: 'public',
+                expiresIn: 3.154e10
+            }
         }
     });
 
@@ -127,11 +133,17 @@ exports.register = function(plugin, options, next) {
     plugin.route({
         method: 'GET',
         path: '/static/{path*}',
-        handler: {
-            directory: {
-                path: path.resolve(appDir, config.staticPath),
-                listing: false,
-                index: true
+        config: {
+            handler: {
+                directory: {
+                    path: path.resolve(appDir, config.staticPath),
+                    listing: false,
+                    index: true
+                }
+            },
+            cache: {
+                privacy: 'public',
+                expiresIn: 3.154e10
             }
         }
     });
