@@ -256,21 +256,26 @@ exports.register = function(plugin, options, next) {
                                     };
                                 }
 
-                                // Render the view with the custom greeting
-                                reply.view(controller + '/' +
-                                    instance.view, _.merge({
-                                        APP_NAME: config.appName,
-                                        SCRIPTS: scriptInjection
-                                            .replace(
-                                                '{{CONTROLLER}}',
-                                                controller +
-                                                subController),
-                                        PRIMUS_JS: '/static/primus.js',
-                                        user: {
-                                            isAuthenticated: req.auth.isAuthenticated
-                                        }
-                                    }, instance.viewProps, user),
-                                    viewOptions);
+                                // If we are redirecting
+                                if (instance.redirect) {
+                                    reply.redirect(instance.redirect);
+                                } else {
+                                    // Render the view with the custom greeting
+                                    reply.view(controller + '/' +
+                                        instance.view, _.merge({
+                                            APP_NAME: config.appName,
+                                            PRIMUS_SCRIPTS: scriptInjection
+                                                .replace(
+                                                    '{{CONTROLLER}}',
+                                                    controller +
+                                                    subController),
+                                            PRIMUS_JS: '/static/primus.js',
+                                            user: {
+                                                isAuthenticated: req.auth.isAuthenticated
+                                            }
+                                        }, instance.viewProps, user),
+                                        viewOptions);
+                                }
                             });
 
                         }
