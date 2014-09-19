@@ -123,7 +123,7 @@ exports.register = function(plugin, options, next) {
                 reply(config.primus.library())
                     .type('application/javascript');
             },
-            cache: cacheSettings
+            cache: config.cacheSettings
         }
     });
 
@@ -139,7 +139,7 @@ exports.register = function(plugin, options, next) {
                     index: true
                 }
             },
-            cache: cacheSettings
+            cache: config.cacheSettings
         }
     });
 
