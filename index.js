@@ -26,6 +26,7 @@ var config = {
     primus: null,
     server: null,
     appName: null,
+    cacheSettings: {},
     controllerPath: './Controllers',
     staticPath: './Static',
     indexController: 'index',
@@ -122,10 +123,7 @@ exports.register = function(plugin, options, next) {
                 reply(config.primus.library())
                     .type('application/javascript');
             },
-            cache: {
-                privacy: 'public',
-                expiresIn: 3.154e10
-            }
+            cache: cacheSettings
         }
     });
 
@@ -141,10 +139,7 @@ exports.register = function(plugin, options, next) {
                     index: true
                 }
             },
-            cache: {
-                privacy: 'public',
-                expiresIn: 3.154e10
-            }
+            cache: cacheSettings
         }
     });
 
