@@ -26,7 +26,10 @@ var config = {
     primus: null,
     server: null,
     appName: null,
-    cacheSettings: {},
+    cacheSettings: {
+            privacy: 'public',
+            expiresIn: 3.154e10
+        },
     controllerPath: './Controllers',
     staticPath: './Static',
     indexController: 'index',
