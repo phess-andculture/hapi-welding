@@ -133,20 +133,22 @@ exports.register = function(plugin, options, next) {
     });
 
     // Route to the static files
-    plugin.route({
-        method: 'GET',
-        path: '/static/{path*}',
-        config: {
-            handler: {
-                directory: {
-                    path: path.resolve(appDir, config.staticPath),
-                    listing: false,
-                    index: true
-                }
-            },
-            cache: config.cacheSettings
-        }
-    });
+    if (config.staticPath) {
+        plugin.route({
+            method: 'GET',
+            path: '/static/{path*}',
+            config: {
+                handler: {
+                    directory: {
+                        path: path.resolve(appDir, config.staticPath),
+                        listing: false,
+                        index: true
+                    }
+                },
+                cache: config.cacheSettings
+            }
+        });
+    }
 
     // Add the index route
     plugin.route({
