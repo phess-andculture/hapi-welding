@@ -15,8 +15,10 @@ var http = require('http'),
         '<script src="/static/primus.js" type="text/javascript"></script>',
         '<script type="text/javascript">',
         '(function (root) {',
-        '   var primus = Primus.connect("ws://{{HOST}}:{{PORT}}/?token=" + jwtToken);',
-        '   root.Controller = primus.resource("{{CONTROLLER}}");',
+        '   if (jwtToken) {',
+        '       var primus = Primus.connect("ws://{{HOST}}:{{PORT}}/?token=" + jwtToken);',
+        '       root.Controller = primus.resource("{{CONTROLLER}}");',
+        '   }',
         '})(this);',
         '</script>'
     ].join('\n'),
@@ -26,6 +28,10 @@ var config = {
     primus: null,
     server: null,
     appName: null,
+    cacheSettings: {
+            privacy: 'public',
+            expiresIn: 3.6e6
+        },
     controllerPath: './Controllers',
     staticPath: './Static',
     indexController: 'index',
@@ -117,24 +123,32 @@ exports.register = function(plugin, options, next) {
     plugin.route({
         method: 'GET',
         path: '/static/primus.js',
-        handler: function(req, reply) {
-            reply(config.primus.library())
-                .type('application/javascript');
+        config: {
+            handler: function(req, reply) {
+                reply(config.primus.library())
+                    .type('application/javascript');
+            },
+            cache: config.cacheSettings
         }
     });
 
     // Route to the static files
-    plugin.route({
-        method: 'GET',
-        path: '/static/{path*}',
-        handler: {
-            directory: {
-                path: path.resolve(appDir, config.staticPath),
-                listing: false,
-                index: true
+    if (config.staticPath) {
+        plugin.route({
+            method: 'GET',
+            path: '/static/{path*}',
+            config: {
+                handler: {
+                    directory: {
+                        path: path.resolve(appDir, config.staticPath),
+                        listing: false,
+                        index: true
+                    }
+                },
+                cache: config.cacheSettings
             }
-        }
-    });
+        });
+    }
 
     // Add the index route
     plugin.route({
@@ -256,21 +270,26 @@ exports.register = function(plugin, options, next) {
                                     };
                                 }
 
-                                // Render the view with the custom greeting
-                                reply.view(controller + '/' +
-                                    instance.view, _.merge({
-                                        APP_NAME: config.appName,
-                                        SCRIPTS: scriptInjection
-                                            .replace(
-                                                '{{CONTROLLER}}',
-                                                controller +
-                                                subController),
-                                        PRIMUS_JS: '/static/primus.js',
-                                        user: {
-                                            isAuthenticated: req.auth.isAuthenticated
-                                        }
-                                    }, instance.viewProps, user),
-                                    viewOptions);
+                                // If we are redirecting
+                                if (instance.redirect) {
+                                    reply.redirect(instance.redirect);
+                                } else {
+                                    // Render the view with the custom greeting
+                                    reply.view(controller + '/' +
+                                        instance.view, _.merge({
+                                            APP_NAME: config.appName,
+                                            PRIMUS_SCRIPTS: scriptInjection
+                                                .replace(
+                                                    '{{CONTROLLER}}',
+                                                    controller +
+                                                    subController),
+                                            PRIMUS_JS: '/static/primus.js',
+                                            user: {
+                                                isAuthenticated: req.auth.isAuthenticated
+                                            }
+                                        }, instance.viewProps, user),
+                                        viewOptions);
+                                }
                             });
 
                         }
