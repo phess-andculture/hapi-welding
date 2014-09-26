@@ -1,16 +1,15 @@
+'use strict';
 (function() {
-    'use strict';
-
-    var _               = require('lodash'),
+    var _ = require('lodash'),
         controllerFiles,
-        controllers     = {},
-        emitter         = require('primus-emitter'),
-        fs              = require('fs'),
-        http            = require('http'),
-        multiplex       = require('primus-multiplex'),
-        path            = require('path'),
-        pkg             = require('./package.json'),
-        primusMapping   = require('./primusMapping'),
+        controllers = {},
+        emitter = require('primus-emitter'),
+        fs = require('fs'),
+        http = require('http'),
+        multiplex = require('primus-multiplex'),
+        path = require('path'),
+        pkg = require('./package.json'),
+        primusMapping = require('./primusMapping'),
         scriptInjection = [
             '<script src="/static/js/primus.min.js" type="text/javascript"></script>',
             '<script type="text/javascript">',
@@ -22,9 +21,9 @@
             '})(this);',
             '</script>'
         ].join('\n'),
-        wrench          = require('wrench'),
-        UglifyJS        = require('uglify-js'),
-        appDir          = path.dirname(require.main.filename);
+        wrench = require('wrench'),
+        UglifyJS = require('uglify-js'),
+        appDir = path.dirname(require.main.filename);
 
     var config = {
         primus: null,
@@ -124,7 +123,7 @@
 
         // Generate uglified primus lib
         var primusDir  = path.join(path.resolve(appDir, config.staticPath), 'js'),
-            primusFile = path.join(primusDir, 'primus.min.js');
+            primusFile = path.join(primusDir, 'primus.js');
         fs.exists(primusDir, function(exists) {
             if (!exists) {
                 fs.mkdirSync(primusDir);
@@ -133,7 +132,8 @@
                 if (err) {
                     throw err;
                 }
-                fs.writeFile(primusFile, UglifyJS.minify(primusFile).code, function(err) {
+                fs.writeFile(primusFile.replace('.js', '.min.js'), 
+                        UglifyJS.minify(primusFile).code, function(err) {
                     if (err) {
                         throw err;
                     }
