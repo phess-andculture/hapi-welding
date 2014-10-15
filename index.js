@@ -15,7 +15,7 @@
             '<script type="text/javascript">',
             '(function (root) {',
             '   if (jwtToken) {',
-            '       var primus = Primus.connect("ws://{{HOST}}:{{PORT}}/?token=" + jwtToken);',
+            '       var primus = Primus.connect("{{ENDPOINT}}/?token=" + jwtToken);',
             '       root.Controller = primus.resource("{{CONTROLLER}}");',
             '   }',
             '})(this);',
@@ -28,6 +28,7 @@
     var config = {
         primus: null,
         server: null,
+        endpoint: null,
         appName: null,
         cacheSettings: {
                 privacy: 'public',
@@ -114,11 +115,7 @@
                 config.controllerPath));
 
             //set primus linkage for the client
-            scriptInjection = scriptInjection.replace('{{HOST}}', config.server.info
-                .host);
-            scriptInjection = scriptInjection.replace('{{PORT}}', config.server.info
-                .port);
-
+            scriptInjection = scriptInjection.replace('{{ENDPOINT}}', config.endpoint);
         }
 
         // Generate uglified primus lib
